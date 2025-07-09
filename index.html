@@ -3,26 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>experiments</title>
+    <title>Local Weather</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 2em; background: #f9f9f9; color: #222; }
-        .container { max-width: 700px; margin: auto; background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+        .container { max-width: 400px; margin: auto; background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
         h1 { color: #2d6cdf; }
-        a { color: #2d6cdf; text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        #weather { margin-top: 1.5em; }
+        .loading { color: #888; }
+        .error { color: #c00; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>experiments</h1>
-        <p>Welcome to the <strong>experiments</strong> project! This is the GitHub Pages index for the repository.</p>
-        <h2>Repository Contents</h2>
-        <ul>
-            <li><code>disable_canoe_message.py</code></li>
-            <li><code>README.md</code></li>
-        </ul>
-        <p>See the <a href="README.md">README</a> for more information.</p>
+        <h1>Local Weather</h1>
+        <p>Get the current weather for your location.</p>
+        <div id="weather" class="loading">Fetching your weather...</div>
         <footer style="margin-top:2em;font-size:0.9em;color:#888;">&copy; 2025</footer>
     </div>
+    <script>
+    async function getWeather(lat, lon) {
+        // Using Open-Meteo free API (no key required)
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
+        try {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Weather fetch failed');
+            const data = await res.json();
+            if (!data.current_weather) throw new Error('No weather data');
+            const w = data.current_weather;
+            return `
+                <strong>Temperature:</strong> ${w.temperature}&deg;C<br>
+                <strong>Wind:</strong> ${w.windspeed} km/h<br>
+                <strong>Condition:</strong> ${weatherCodeToText(w.weathercode)}
+            `;
+        } catch (e) {
+            return `<span class="error">Could not fetch weather: ${e.message}</span>`;
+        }
+    }
+
+    function weatherCodeToText(code) {
+        // Open-Meteo weather codes
+        const map = {
+            0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
+            45: 'Fog', 48: 'Depositing rime fog',
+            51: 'Light drizzle', 53: 'Drizzle', 55: 'Dense drizzle',
+            61: 'Slight rain', 63: 'Rain', 65: 'Heavy rain',
+            71: 'Slight snow', 73: 'Snow', 75: 'Heavy snow',
+            80: 'Rain showers', 81: 'Heavy rain showers', 82: 'Violent rain showers',
+            95: 'Thunderstorm', 96: 'Thunderstorm w/ hail', 99: 'Thunderstorm w/ heavy hail'
+        };
+        return map[code] || 'Unknown';
+    }
+
+    function showWeather() {
+        const el = document.getElementById('weather');
+        if (!navigator.geolocation) {
+            el.innerHTML = '<span class="error">Geolocation is not supported by your browser.</span>';
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(async pos => {
+            el.classList.remove('loading');
+            el.innerHTML = 'Loading weather...';
+            const html = await getWeather(pos.coords.latitude, pos.coords.longitude);
+            el.innerHTML = html;
+        }, err => {
+            el.classList.remove('loading');
+            el.innerHTML = `<span class="error">Location error: ${err.message}</span>`;
+        });
+    }
+    showWeather();
+    </script>
 </body>
 </html>
