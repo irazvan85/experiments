@@ -3,51 +3,318 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Local Weather</title>
+    <title>Pixel Weather</title>
     <style>
-        body { font-family: 'Courier New', Courier, monospace; margin: 2em; background: #222; color: #eee; text-align: center; }
-        .container { max-width: 400px; margin: auto; background: #333; padding: 2em; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
-        h1 { color: #6cf; }
-        #location { margin-top: 1em; font-size: 1.2em; color: #9cf; }
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        :root {
+            --bg-day: linear-gradient(to bottom, #1e90ff, #87ceeb);
+            --bg-night: linear-gradient(to bottom, #191970, #483d8b);
+            --bg-rain: linear-gradient(to bottom, #4682b4, #708090);
+            --bg-snow: linear-gradient(to bottom, #778899, #b0c4de);
+            --bg-storm: linear-gradient(to bottom, #2f4f4f, #4b0082);
+        }
+        
+        body { 
+            font-family: 'Press Start 2P', cursive; 
+            margin: 0; 
+            padding: 20px; 
+            background: #121212; 
+            color: #eee; 
+            text-align: center;
+            line-height: 1.6;
+        }
+        
+        .container { 
+            max-width: 500px; 
+            margin: auto; 
+            background: #212121; 
+            padding: 2em; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            border: 2px solid #444;
+        }
+        
+        h1 { 
+            color: #00bfff; 
+            text-shadow: 3px 3px 0px rgba(0,0,0,0.5);
+            margin-bottom: 25px;
+            font-size: 1.7em;
+        }
+        
+        #location { 
+            margin-top: 1em; 
+            font-size: 1em; 
+            color: #9cf;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
         #weather-art {
-            width: 100px;
-            height: 100px;
-            margin: 1.5em auto;
+            width: 200px;
+            height: 200px;
+            margin: 2em auto;
             position: relative;
             overflow: hidden;
-            background: #557;
+            background: var(--bg-day);
             border: 4px solid #444;
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            transition: background 1s ease;
         }
-        .pixel { position: absolute; width: 5px; height: 5px; }
+        
+        .pixel { 
+            position: absolute; 
+            width: 5px; 
+            height: 5px; 
+            image-rendering: pixelated;
+            transition: all 0.3s;
+        }
+        
+        /* Sky elements */
+        .sky-color {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transition: background 1s;
+        }
+        
+        /* Ground */
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 30px;
+            background: #228B22;
+            transition: background 1s;
+        }
+        
+        /* Buildings */
+        .building {
+            position: absolute;
+            bottom: 30px;
+            width: 40px;
+            height: 60px;
+            background: #555;
+            transition: background 0.5s;
+        }
+        
+        .building-window {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background: #FFFF99;
+            box-shadow: 0 0 5px rgba(255, 255, 153, 0.7);
+        }
+        
         /* Sunny */
-        .sun { width: 30px; height: 30px; background: #ff0; border-radius: 50%; position: absolute; top: 15px; left: 35px; box-shadow: 0 0 20px #ff0; animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        .sun { 
+            width: 40px; 
+            height: 40px; 
+            background: #FFFF00; 
+            border-radius: 50%; 
+            position: absolute; 
+            top: 25px; 
+            left: 45%; 
+            box-shadow: 0 0 30px #FFCC00; 
+            animation: sun-pulse 3s infinite, sun-move 40s infinite linear; 
+            z-index: 1;
+        }
+        
+        .sun-ray {
+            position: absolute;
+            background: #FFFF00;
+            width: 5px;
+            height: 15px;
+            top: 50%;
+            left: 50%;
+            transform-origin: 0 0;
+            box-shadow: 0 0 5px rgba(255, 255, 0, 0.7);
+            animation: sun-ray-pulse 2s infinite;
+        }
+        
+        @keyframes sun-pulse { 
+            0%, 100% { transform: scale(1); } 
+            50% { transform: scale(1.1); } 
+        }
+        
+        @keyframes sun-ray-pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+        
+        @keyframes sun-move {
+            0% { transform: translateX(-100px); }
+            50% { transform: translateX(100px); }
+            100% { transform: translateX(-100px); }
+        }
+        
         /* Cloudy */
-        .cloud { width: 40px; height: 20px; background: #fff; border-radius: 20px; position: absolute; }
-        .cloud.c1 { top: 20px; left: 15px; }
-        .cloud.c2 { top: 35px; left: 40px; width: 30px; }
+        .cloud-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .cloud { 
+            width: 50px; 
+            height: 25px; 
+            background: #f8f8ff; 
+            border-radius: 25px; 
+            position: absolute;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+        
+        .cloud.c1 { 
+            top: 30px; 
+            animation: cloud-drift-1 30s infinite linear;
+        }
+        
+        .cloud.c2 { 
+            top: 70px;
+            width: 60px;
+            animation: cloud-drift-2 45s infinite linear;
+        }
+        
+        @keyframes cloud-drift-1 {
+            0% { left: -60px; }
+            100% { left: 100%; }
+        }
+        
+        @keyframes cloud-drift-2 {
+            0% { left: 100%; }
+            100% { left: -60px; }
+        }
+        
         /* Rain */
-        .rain-drop { background: #8cf; width: 2px; height: 8px; position: absolute; animation: fall 0.5s linear infinite; }
-        @keyframes fall { to { transform: translateY(100px); } }
+        .rain-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .rain-drop { 
+            background: linear-gradient(to bottom, rgba(156, 217, 255, 0.5), rgba(156, 217, 255, 0.8)); 
+            width: 2px; 
+            height: 10px; 
+            position: absolute; 
+            animation: fall 0.5s linear infinite; 
+            box-shadow: 0 0 2px rgba(156, 217, 255, 0.5);
+        }
+        
+        @keyframes fall { 
+            from { transform: translateY(-10px); } 
+            to { transform: translateY(210px); } 
+        }
+        
         /* Snow */
-        .snow-flake { background: #fff; width: 4px; height: 4px; border-radius: 50%; position: absolute; animation: fall-snow 2s linear infinite; }
-        @keyframes fall-snow { to { transform: translateY(100px) rotate(360deg); } }
+        .snow-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .snow-flake { 
+            background: #fff; 
+            width: 4px; 
+            height: 4px; 
+            border-radius: 50%; 
+            position: absolute; 
+            animation: fall-snow 3s linear infinite;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
+        }
+        
+        @keyframes fall-snow { 
+            from { transform: translateY(-5px) rotate(0deg); } 
+            to { transform: translateY(205px) rotate(360deg); } 
+        }
+        
         /* Thunder */
-        .lightning { position: absolute; top: 0; left: 50%; width: 4px; height: 100%; background: #ff0; transform: translateX(-50%); animation: flash 1.5s infinite; opacity: 0; }
-        @keyframes flash { 50% { opacity: 1; } }
-
-        #weather-info { margin-top: 1.5em; font-size: 1.1em; }
-        .loading { color: #888; }
-        .error { color: #f88; }
+        .storm-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .lightning { 
+            position: absolute; 
+            width: 4px; 
+            height: 100%; 
+            background: #FFFF00; 
+            animation: flash 2s infinite; 
+            opacity: 0;
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.7), 0 0 40px rgba(255, 255, 0, 0.4);
+            z-index: 5;
+        }
+        
+        .lightning-branch {
+            position: absolute;
+            background: #FFFF00;
+            width: 3px;
+            height: 20px;
+            transform-origin: top left;
+            box-shadow: 0 0 10px rgba(255, 255, 0, 0.7);
+        }
+        
+        @keyframes flash { 
+            0%, 95%, 100% { opacity: 0; } 
+            96%, 99% { opacity: 1; } 
+        }
+        
+        /* Time of day and color changes */
+        @keyframes color-shift {
+            0%, 100% { filter: hue-rotate(0deg); }
+            50% { filter: hue-rotate(30deg); }
+        }
+        
+        #weather-info { 
+            margin-top: 2em; 
+            font-size: 0.9em;
+            line-height: 2;
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 4px;
+            text-shadow: 1px 1px 0px rgba(0,0,0,0.5);
+        }
+        
+        .loading { 
+            color: #888; 
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .error { color: #ff6b6b; }
+        
+        footer {
+            margin-top: 2em;
+            font-size: 0.7em;
+            color: #777;
+            text-shadow: 1px 1px 0px rgba(0,0,0,0.5);
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Pixel Weather</h1>
+        <h1>PIXEL WEATHER</h1>
         <div id="location" class="loading">Fetching location...</div>
-        <div id="weather-art"></div>
+        <div id="weather-art">
+            <div class="sky-color"></div>
+            <div class="ground"></div>
+        </div>
         <div id="weather-info" class="loading">Fetching weather...</div>
-        <footer style="margin-top:2em;font-size:0.9em;color:#888;">&copy; 2025</footer>
+        <footer>&copy; 2025 • Pixel Weather App</footer>
     </div>
     <script>
     const weatherArtEl = document.getElementById('weather-art');
@@ -68,7 +335,7 @@
 
     async function getWeather(lat, lon) {
         // Using Open-Meteo free API (no key required)
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`;
         try {
             const res = await fetch(url);
             if (!res.ok) throw new Error('Weather fetch failed');
@@ -76,10 +343,14 @@
             if (!data.current_weather) throw new Error('No weather data');
             const w = data.current_weather;
             updateWeatherAnimation(w.weathercode);
+            
+            // Convert temperature to both C and F
+            const tempF = (w.temperature * 9/5) + 32;
+            
             return `
-                <strong>Temp:</strong> ${w.temperature}&deg;C<br>
-                <strong>Wind:</strong> ${w.windspeed} km/h<br>
-                <strong>Condition:</strong> ${weatherCodeToText(w.weathercode)}
+                <strong>🌡️ TEMP:</strong> ${w.temperature.toFixed(1)}°C (${tempF.toFixed(1)}°F)<br>
+                <strong>💨 WIND:</strong> ${w.windspeed} km/h<br>
+                <strong>🌤️ CONDITION:</strong> ${weatherCodeToText(w.weathercode)}
             `;
         } catch (e) {
             return `<span class="error">Could not fetch weather: ${e.message}</span>`;
@@ -87,49 +358,251 @@
     }
 
     function updateWeatherAnimation(code) {
-        weatherArtEl.innerHTML = ''; // Clear previous animation
+        // Clear previous animation
+        weatherArtEl.innerHTML = '';
         
-        // Base background
-        weatherArtEl.style.background = '#557';
-
-        // Sun
-        if (code <= 1) { // Clear or mainly clear
-            weatherArtEl.style.background = '#87CEEB'; // Sky blue
-            weatherArtEl.innerHTML += '<div class="sun"></div>';
+        // Create base elements that will be in all scenes
+        const skyColor = document.createElement('div');
+        skyColor.className = 'sky-color';
+        
+        const ground = document.createElement('div');
+        ground.className = 'ground';
+        
+        weatherArtEl.appendChild(skyColor);
+        weatherArtEl.appendChild(ground);
+        
+        // Create cityscape
+        createCityscape();
+        
+        // Add time-of-day effect (simplistic day/night based on weather code)
+        const hour = new Date().getHours();
+        const isNight = (hour < 6 || hour > 18);
+        
+        // Determine weather type and set appropriate visuals
+        if (code <= 1) { // Clear sky
+            if (isNight) {
+                // Night sky with stars
+                weatherArtEl.style.background = 'var(--bg-night)';
+                ground.style.background = '#1a472a';
+                createStars(40);
+                createMoon();
+            } else {
+                // Sunny day
+                weatherArtEl.style.background = 'var(--bg-day)';
+                createSun();
+            }
+        } else if (code <= 3) { // Partly cloudy / Overcast
+            if (isNight) {
+                weatherArtEl.style.background = 'var(--bg-night)';
+                ground.style.background = '#1a472a';
+                createStars(20);  // Fewer stars because of clouds
+                if (code < 3) createMoon(); // Only visible in partly cloudy
+            } else {
+                weatherArtEl.style.background = 'var(--bg-day)';
+                if (code < 3) createSun(); // Partial sun for partly cloudy
+            }
+            createClouds(code >= 3 ? 5 : 3); // More clouds if overcast
+        } else if (code >= 45 && code <= 48) { // Fog
+            weatherArtEl.style.background = '#b8c4cc';
+            ground.style.background = '#8a9196';
+            createFog();
+        } else if ((code >= 51 && code <= 65) || (code >= 80 && code <= 82)) { // Rain
+            weatherArtEl.style.background = 'var(--bg-rain)';
+            ground.style.background = '#3a5f6f';
+            createClouds(4);
+            createRain(code >= 63 || code >= 81 ? 50 : 30); // More rain if heavy
+        } else if (code >= 71 && code <= 75) { // Snow
+            weatherArtEl.style.background = 'var(--bg-snow)';
+            ground.style.background = '#ffffff';
+            createClouds(4);
+            createSnow(code >= 73 ? 40 : 25); // More snow if heavy
+        } else if (code >= 95) { // Thunderstorm
+            weatherArtEl.style.background = 'var(--bg-storm)';
+            ground.style.background = '#2f4f4f';
+            createClouds(5, true); // Dark clouds
+            createRain(40);
+            createLightning();
         }
-
-        // Clouds
-        if (code >= 1 && code <= 3) { // Cloudy variants
-            weatherArtEl.innerHTML += '<div class="cloud c1"></div><div class="cloud c2"></div>';
+    }
+    
+    function createCityscape() {
+        // Create buildings in the background
+        const numBuildings = 5;
+        const buildingWidth = 200 / numBuildings;
+        
+        for (let i = 0; i < numBuildings; i++) {
+            const height = 20 + Math.random() * 40;
+            const building = document.createElement('div');
+            building.className = 'building';
+            building.style.left = (i * buildingWidth) + 'px';
+            building.style.width = buildingWidth + 'px';
+            building.style.height = height + 'px';
+            building.style.background = `rgb(${40 + Math.random() * 40}, ${40 + Math.random() * 40}, ${40 + Math.random() * 40})`;
+            
+            // Add windows to buildings
+            const numWindows = Math.floor(height / 10);
+            for (let j = 0; j < numWindows; j++) {
+                for (let k = 0; k < 2; k++) {
+                    if (Math.random() > 0.3) { // Some windows are dark
+                        const windowEl = document.createElement('div');
+                        windowEl.className = 'building-window';
+                        windowEl.style.bottom = (j * 10 + 5) + 'px';
+                        windowEl.style.left = (k * 10 + (buildingWidth/2) - 7) + 'px';
+                        building.appendChild(windowEl);
+                    }
+                }
+            }
+            
+            weatherArtEl.appendChild(building);
+        }
+    }
+    
+    function createSun() {
+        const sun = document.createElement('div');
+        sun.className = 'sun';
+        
+        // Add sun rays
+        for (let i = 0; i < 8; i++) {
+            const ray = document.createElement('div');
+            ray.className = 'sun-ray';
+            ray.style.transform = `rotate(${i * 45}deg) translate(25px, 0)`;
+            sun.appendChild(ray);
         }
         
-        // Rain
-        if ((code >= 51 && code <= 65) || (code >= 80 && code <= 82)) {
-            weatherArtEl.style.background = '#6a7a8c'; // Stormy grey
-            weatherArtEl.innerHTML += '<div class="cloud c1"></div><div class="cloud c2"></div>';
-            for (let i = 0; i < 20; i++) {
-                const x = Math.random() * 100;
-                const d = Math.random() * 0.5;
-                weatherArtEl.innerHTML += `<div class="rain-drop" style="left:${x}px; animation-delay:${d}s;"></div>`;
+        weatherArtEl.appendChild(sun);
+    }
+    
+    function createMoon() {
+        const moon = document.createElement('div');
+        moon.className = 'sun'; // Reuse the sun class
+        moon.style.background = '#FFFACD';
+        moon.style.boxShadow = '0 0 20px #FFFACD';
+        moon.style.left = '60%';
+        
+        weatherArtEl.appendChild(moon);
+    }
+    
+    function createStars(count) {
+        for (let i = 0; i < count; i++) {
+            const star = document.createElement('div');
+            star.className = 'pixel';
+            star.style.width = '2px';
+            star.style.height = '2px';
+            star.style.background = '#FFFFFF';
+            star.style.borderRadius = '50%';
+            star.style.top = Math.random() * 70 + '%';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.opacity = Math.random() * 0.7 + 0.3;
+            star.style.animation = `blink ${1 + Math.random() * 3}s infinite`;
+            
+            weatherArtEl.appendChild(star);
+        }
+    }
+    
+    function createClouds(count, isDark = false) {
+        const cloudContainer = document.createElement('div');
+        cloudContainer.className = 'cloud-container';
+        
+        for (let i = 0; i < count; i++) {
+            const cloud = document.createElement('div');
+            cloud.className = 'cloud';
+            if (isDark) {
+                cloud.style.background = '#5d646c';
+                cloud.style.boxShadow = '0 0 10px rgba(93, 100, 108, 0.3)';
             }
+            
+            const isTop = i < count/2;
+            cloud.classList.add(isTop ? 'c1' : 'c2');
+            
+            // Adjust starting positions
+            cloud.style.left = (Math.random() * 100) + '%';
+            
+            cloudContainer.appendChild(cloud);
         }
-
-        // Snow
-        if (code >= 71 && code <= 75) {
-            weatherArtEl.style.background = '#6a7a8c';
-            weatherArtEl.innerHTML += '<div class="cloud c1"></div><div class="cloud c2"></div>';
-            for (let i = 0; i < 20; i++) {
-                const x = Math.random() * 100;
-                const d = Math.random() * 2;
-                weatherArtEl.innerHTML += `<div class="snow-flake" style="left:${x}px; animation-delay:${d}s;"></div>`;
+        
+        weatherArtEl.appendChild(cloudContainer);
+    }
+    
+    function createRain(count) {
+        const rainContainer = document.createElement('div');
+        rainContainer.className = 'rain-container';
+        
+        for (let i = 0; i < count; i++) {
+            const drop = document.createElement('div');
+            drop.className = 'rain-drop';
+            drop.style.left = Math.random() * 100 + '%';
+            drop.style.animationDelay = Math.random() * 0.5 + 's';
+            rainContainer.appendChild(drop);
+        }
+        
+        weatherArtEl.appendChild(rainContainer);
+    }
+    
+    function createSnow(count) {
+        const snowContainer = document.createElement('div');
+        snowContainer.className = 'snow-container';
+        
+        for (let i = 0; i < count; i++) {
+            const flake = document.createElement('div');
+            flake.className = 'snow-flake';
+            flake.style.left = Math.random() * 100 + '%';
+            flake.style.animationDelay = Math.random() * 3 + 's';
+            flake.style.animationDuration = 3 + Math.random() * 5 + 's';
+            snowContainer.appendChild(flake);
+        }
+        
+        weatherArtEl.appendChild(snowContainer);
+    }
+    
+    function createLightning() {
+        const stormContainer = document.createElement('div');
+        stormContainer.className = 'storm-container';
+        
+        // Add multiple lightning bolts
+        for (let i = 0; i < 2; i++) {
+            const lightning = document.createElement('div');
+            lightning.className = 'lightning';
+            lightning.style.left = 30 + (i * 40) + '%';
+            lightning.style.animationDelay = (i * 0.7) + 's';
+            
+            // Add branches to the lightning
+            const branchCount = 2 + Math.floor(Math.random() * 3);
+            for (let j = 0; j < branchCount; j++) {
+                const branch = document.createElement('div');
+                branch.className = 'lightning-branch';
+                const direction = Math.random() > 0.5 ? 1 : -1;
+                branch.style.top = (30 + j * 20) + '%';
+                branch.style.left = '0';
+                branch.style.transform = `rotate(${direction * (30 + Math.random() * 20)}deg)`;
+                lightning.appendChild(branch);
             }
+            
+            stormContainer.appendChild(lightning);
         }
-
-        // Thunderstorm
-        if (code >= 95) {
-            weatherArtEl.style.background = '#4c4c5c';
-            weatherArtEl.innerHTML += '<div class="cloud c1"></div><div class="cloud c2"></div><div class="lightning"></div>';
+        
+        weatherArtEl.appendChild(stormContainer);
+    }
+    
+    function createFog() {
+        const fogContainer = document.createElement('div');
+        fogContainer.className = 'cloud-container';
+        
+        // Create multiple fog layers
+        for (let i = 0; i < 8; i++) {
+            const fog = document.createElement('div');
+            fog.className = 'cloud';
+            fog.style.opacity = 0.4 + (Math.random() * 0.2);
+            fog.style.background = '#d8d8d8';
+            fog.style.width = 80 + (Math.random() * 50) + 'px';
+            fog.style.height = 10 + (Math.random() * 15) + 'px';
+            fog.style.top = (i * 20) + (Math.random() * 10) + 'px';
+            fog.style.left = (Math.random() * 100) + '%';
+            fog.style.animation = `cloud-drift-${i % 2 + 1} ${30 + Math.random() * 40}s infinite linear`;
+            
+            fogContainer.appendChild(fog);
         }
+        
+        weatherArtEl.appendChild(fogContainer);
     }
 
     function weatherCodeToText(code) {
