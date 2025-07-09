@@ -5,22 +5,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Local Weather</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 2em; background: #f9f9f9; color: #222; }
-        .container { max-width: 400px; margin: auto; background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
-        h1 { color: #2d6cdf; }
-        #weather { margin-top: 1.5em; }
+        body { font-family: 'Courier New', Courier, monospace; margin: 2em; background: #222; color: #eee; text-align: center; }
+        .container { max-width: 400px; margin: auto; background: #333; padding: 2em; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        h1 { color: #6cf; }
+        #location { margin-top: 1em; font-size: 1.2em; color: #9cf; }
+        #weather-art {
+            width: 100px;
+            height: 100px;
+            margin: 1.5em auto;
+            position: relative;
+            overflow: hidden;
+            background: #557;
+            border: 4px solid #444;
+        }
+        .pixel { position: absolute; width: 5px; height: 5px; }
+        /* Sunny */
+        .sun { width: 30px; height: 30px; background: #ff0; border-radius: 50%; position: absolute; top: 15px; left: 35px; box-shadow: 0 0 20px #ff0; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        /* Cloudy */
+        .cloud { width: 40px; height: 20px; background: #fff; border-radius: 20px; position: absolute; }
+        .cloud.c1 { top: 20px; left: 15px; }
+        .cloud.c2 { top: 35px; left: 40px; width: 30px; }
+        /* Rain */
+        .rain-drop { background: #8cf; width: 2px; height: 8px; position: absolute; animation: fall 0.5s linear infinite; }
+        @keyframes fall { to { transform: translateY(100px); } }
+        /* Snow */
+        .snow-flake { background: #fff; width: 4px; height: 4px; border-radius: 50%; position: absolute; animation: fall-snow 2s linear infinite; }
+        @keyframes fall-snow { to { transform: translateY(100px) rotate(360deg); } }
+        /* Thunder */
+        .lightning { position: absolute; top: 0; left: 50%; width: 4px; height: 100%; background: #ff0; transform: translateX(-50%); animation: flash 1.5s infinite; opacity: 0; }
+        @keyframes flash { 50% { opacity: 1; } }
+
+        #weather-info { margin-top: 1.5em; font-size: 1.1em; }
         .loading { color: #888; }
-        .error { color: #c00; }
+        .error { color: #f88; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Local Weather</h1>
-        <p>Get the current weather for your location.</p>
-        <div id="weather" class="loading">Fetching your weather...</div>
+        <h1>Pixel Weather</h1>
+        <div id="location" class="loading">Fetching location...</div>
+        <div id="weather-art"></div>
+        <div id="weather-info" class="loading">Fetching weather...</div>
         <footer style="margin-top:2em;font-size:0.9em;color:#888;">&copy; 2025</footer>
     </div>
     <script>
+    const weatherArtEl = document.getElementById('weather-art');
+    const weatherInfoEl = document.getElementById('weather-info');
+    const locationEl = document.getElementById('location');
+
+    async function getLocationName(lat, lon) {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
+        try {
+            const res = await fetch(url);
+            if (!res.ok) return 'Unknown Location';
+            const data = await res.json();
+            return data.address.city || data.address.town || data.address.village || 'Unknown Location';
+        } catch {
+            return 'Unknown Location';
+        }
+    }
+
     async function getWeather(lat, lon) {
         // Using Open-Meteo free API (no key required)
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
@@ -30,13 +75,60 @@
             const data = await res.json();
             if (!data.current_weather) throw new Error('No weather data');
             const w = data.current_weather;
+            updateWeatherAnimation(w.weathercode);
             return `
-                <strong>Temperature:</strong> ${w.temperature}&deg;C<br>
+                <strong>Temp:</strong> ${w.temperature}&deg;C<br>
                 <strong>Wind:</strong> ${w.windspeed} km/h<br>
                 <strong>Condition:</strong> ${weatherCodeToText(w.weathercode)}
             `;
         } catch (e) {
             return `<span class="error">Could not fetch weather: ${e.message}</span>`;
+        }
+    }
+
+    function updateWeatherAnimation(code) {
+        weatherArtEl.innerHTML = ''; // Clear previous animation
+        
+        // Base background
+        weatherArtEl.style.background = '#557';
+
+        // Sun
+        if (code <= 1) { // Clear or mainly clear
+            weatherArtEl.style.background = '#87CEEB'; // Sky blue
+            weatherArtEl.innerHTML += '<div class="sun"></div>';
+        }
+
+        // Clouds
+        if (code >= 1 && code <= 3) { // Cloudy variants
+            weatherArtEl.innerHTML += '<div class="cloud c1"></div><div class="cloud c2"></div>';
+        }
+        
+        // Rain
+        if ((code >= 51 && code <= 65) || (code >= 80 && code <= 82)) {
+            weatherArtEl.style.background = '#6a7a8c'; // Stormy grey
+            weatherArtEl.innerHTML += '<div class="cloud c1"></div><div class="cloud c2"></div>';
+            for (let i = 0; i < 20; i++) {
+                const x = Math.random() * 100;
+                const d = Math.random() * 0.5;
+                weatherArtEl.innerHTML += `<div class="rain-drop" style="left:${x}px; animation-delay:${d}s;"></div>`;
+            }
+        }
+
+        // Snow
+        if (code >= 71 && code <= 75) {
+            weatherArtEl.style.background = '#6a7a8c';
+            weatherArtEl.innerHTML += '<div class="cloud c1"></div><div class="cloud c2"></div>';
+            for (let i = 0; i < 20; i++) {
+                const x = Math.random() * 100;
+                const d = Math.random() * 2;
+                weatherArtEl.innerHTML += `<div class="snow-flake" style="left:${x}px; animation-delay:${d}s;"></div>`;
+            }
+        }
+
+        // Thunderstorm
+        if (code >= 95) {
+            weatherArtEl.style.background = '#4c4c5c';
+            weatherArtEl.innerHTML += '<div class="cloud c1"></div><div class="cloud c2"></div><div class="lightning"></div>';
         }
     }
 
@@ -55,19 +147,29 @@
     }
 
     function showWeather() {
-        const el = document.getElementById('weather');
         if (!navigator.geolocation) {
-            el.innerHTML = '<span class="error">Geolocation is not supported by your browser.</span>';
+            locationEl.innerHTML = '<span class="error">Geolocation not supported.</span>';
+            weatherInfoEl.innerHTML = '';
             return;
         }
         navigator.geolocation.getCurrentPosition(async pos => {
-            el.classList.remove('loading');
-            el.innerHTML = 'Loading weather...';
-            const html = await getWeather(pos.coords.latitude, pos.coords.longitude);
-            el.innerHTML = html;
+            const { latitude, longitude } = pos.coords;
+            
+            locationEl.classList.remove('loading');
+            weatherInfoEl.classList.remove('loading');
+
+            locationEl.innerHTML = 'Loading city...';
+            const locationName = await getLocationName(latitude, longitude);
+            locationEl.innerHTML = locationName;
+
+            weatherInfoEl.innerHTML = 'Loading weather...';
+            const html = await getWeather(latitude, longitude);
+            weatherInfoEl.innerHTML = html;
         }, err => {
-            el.classList.remove('loading');
-            el.innerHTML = `<span class="error">Location error: ${err.message}</span>`;
+            locationEl.classList.remove('loading');
+            weatherInfoEl.classList.remove('loading');
+            locationEl.innerHTML = `<span class="error">Location error</span>`;
+            weatherInfoEl.innerHTML = `<span class="error">${err.message}</span>`;
         });
     }
     showWeather();
