@@ -1,0 +1,76 @@
+/*
+ * CAPL Script: Message Disabling Example
+ * Description: This script demonstrates how to intercept and disable a specific CAN message
+ * from being transmitted on the bus.
+ * Date: July 10, 2025
+ */
+
+variables
+{
+  // Define the ID of the message you want to disable
+  const int DISABLED_MESSAGE_ID = 0x123;  // Change this to your target message ID
+  
+  // Flag to track if message disabling is active
+  int isDisabled = 1;  // 1 = disabled, 0 = enabled
+}
+
+// This function runs at the start of measurement
+on start
+{
+  write("Message disabling script started");
+  write("Message 0x%x is currently %s", DISABLED_MESSAGE_ID, isDisabled ? "DISABLED" : "ENABLED");
+}
+
+// This function intercepts all messages before they are sent
+on preTransmit *
+{
+  // Check if the message being transmitted matches our target ID
+  if (this.id == DISABLED_MESSAGE_ID && isDisabled)
+  {
+    // Cancel the transmission of this message
+    cancelTransmit();
+    
+    // Optionally log that we blocked a message
+    write("Blocked transmission of message ID: 0x%x", DISABLED_MESSAGE_ID);
+  }
+}
+
+// Function to toggle message disabling on/off
+on key 'D'
+{
+  isDisabled = !isDisabled;
+  write("Message 0x%x is now %s", DISABLED_MESSAGE_ID, isDisabled ? "DISABLED" : "ENABLED");
+}
+
+// Alternative method: Using a specific message handler to disable a particular message
+on preTransmit 0x123 // Replace with your actual message ID
+{
+  if (isDisabled)
+  {
+    cancelTransmit();
+    write("Blocked specific message ID: 0x123");
+  }
+}
+
+// Provide a function to disable a different message ID dynamically
+on key '1' ... '9'
+{
+  // Calculate new message ID based on key press (1-9 → 0x101-0x109)
+  int newID = 0x100 + this - '0';
+  
+  DISABLED_MESSAGE_ID = newID;
+  write("Now targeting message ID: 0x%x (Status: %s)", 
+        DISABLED_MESSAGE_ID, 
+        isDisabled ? "DISABLED" : "ENABLED");
+}
+
+// Optional: Function to demonstrate how to disable message by its name
+// (requires database with message definitions)
+on preTransmit Engine_Status // Replace with your actual message name
+{
+  if (isDisabled)
+  {
+    cancelTransmit();
+    write("Blocked message 'Engine_Status'");
+  }
+}
