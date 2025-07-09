@@ -43,14 +43,6 @@ on key 'D'
 }
 
 // Alternative method: Using a specific message handler to disable a particular message
-on preTransmit 0x123 // Replace with your actual message ID
-{
-  if (isDisabled)
-  {
-    cancelTransmit();
-    write("Blocked specific message ID: 0x123");
-  }
-}
 
 // Provide a function to disable a different message ID dynamically
 on key '1' ... '9'
