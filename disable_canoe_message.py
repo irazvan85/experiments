@@ -1,5 +1,4 @@
 import win32com.client
-import time
 
 def main():
     """
