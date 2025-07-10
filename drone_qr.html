@@ -294,7 +294,7 @@
             background: #181f2a;
             border: 2px solid #00eaff;
             border-radius: 12px;
-            padding: 5px;
+            padding: 2px;
             margin: 20px auto;
             min-height: 300px;
             display: flex;
@@ -336,8 +336,8 @@
             height: 100%;
             display: flex;
             align-items: center;
-            gap: 5px;
-            padding: 2px;
+            gap: 2px;
+            padding: 1px;
             box-sizing: border-box;
             overflow: hidden;
         }
@@ -353,7 +353,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            max-width: 25%; /* More conservative width to ensure QR fits */
+            max-width: 35%; /* Increased to better utilize space */
             overflow: hidden; /* Prevent overflow */
             height: 100%; /* Use full height */
             box-sizing: border-box;
@@ -370,17 +370,17 @@
         .label-title {
             font-weight: bold;
             color: #00eaff;
-            margin-bottom: 8px;
+            margin-bottom: 2px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            line-height: 1.1;
+            letter-spacing: 0.3px;
+            line-height: 0.9;
             text-shadow: 0 2px 8px #0f2027;
         }
 
         .label-info {
-            margin: 2px 0;
+            margin: 1px 0;
             color: #b0c4d4;
-            line-height: 1.2;
+            line-height: 1.1;
             word-wrap: break-word;
         }
 
@@ -414,9 +414,9 @@
         }
 
         .size-info {
-            font-size: 8px;
+            font-size: 6px;
             color: #999;
-            margin-top: 3px;
+            margin-top: 1px;
             text-align: center;
             line-height: 1;
         }
@@ -789,9 +789,9 @@
             labelPreview.style.minHeight = `${pixelHeight}px`;
 
             // Generate label content with side-by-side layout
-            const isSmallLabel = width < 40 || height < 25;
-            const titleFontSize = Math.max(8, Math.min(14, width / 6));
-            const infoFontSize = Math.max(6, Math.min(12, width / 8));
+            const isSmallLabel = width < 35 || height < 20; // Adjusted thresholds for better space usage
+            const titleFontSize = Math.max(6, Math.min(16, width / 4)); // Improved font scaling
+            const infoFontSize = Math.max(5, Math.min(12, width / 6)); // Better info font scaling
             
             let labelContent = '';
             
@@ -804,19 +804,19 @@
                 `;
                 
                 if (operatorId) {
-                    labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;">${operatorId}</div>`;
+                    labelContent += `<div class="label-info" style="font-size: ${Math.max(4, infoFontSize - 1)}px;">${operatorId}</div>`;
                 }
                 
                 labelContent += `<div class="size-info">${width} x ${height} mm</div></div>`;
             } else {
-                // For larger labels, use side-by-side layout
+                // For larger labels, use side-by-side layout with optimized space
                 labelContent = `
                     <div class="label-content">
                         <div class="qr-section">
                             <div id="qrcode"></div>
                         </div>
                         <div class="text-section">
-                            <div class="label-title" style="font-size: ${titleFontSize}px;">DRONE IDENTIFICATION</div>
+                            <div class="label-title" style="font-size: ${titleFontSize}px;">DRONE ID</div>
                 `;
 
                 if (operatorId) {
@@ -824,20 +824,20 @@
                 }
 
                 if (pilotName) {
-                    labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;"><strong>Pilot:</strong> ${pilotName}</div>`;
+                    labelContent += `<div class="label-info" style="font-size: ${Math.max(4, infoFontSize - 1)}px;"><strong>Pilot:</strong> ${pilotName}</div>`;
                 }
 
                 if (phoneNumber) {
-                    labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;"><strong>Phone:</strong> ${phoneNumber}</div>`;
+                    labelContent += `<div class="label-info" style="font-size: ${Math.max(4, infoFontSize - 1)}px;"><strong>Phone:</strong> ${phoneNumber}</div>`;
                 }
 
                 if (droneName) {
-                    labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;"><strong>Model:</strong> ${droneName}</div>`;
+                    labelContent += `<div class="label-info" style="font-size: ${Math.max(4, infoFontSize - 1)}px;"><strong>Model:</strong> ${droneName}</div>`;
                 }
 
                 if (customFields.length > 0) {
                     customFields.forEach(field => {
-                        labelContent += `<div class="label-info" style="font-size: ${Math.max(5, infoFontSize - 1)}px;">${field}</div>`;
+                        labelContent += `<div class="label-info" style="font-size: ${Math.max(3, infoFontSize - 2)}px;">${field}</div>`;
                     });
                 }
 
@@ -859,21 +859,21 @@
             showProgress();
             showQRLoading(qrContainer);
             
-            // Final adjustment for QR code sizing
+            // Final adjustment for QR code sizing - optimized for maximum space usage
             let adjustedQrSize;
             if (isSmallLabel) {
                 // For small labels, QR takes up most of the available space
-                const availableWidth = pixelWidth - 10; // account for padding
-                const availableHeight = pixelHeight - 30; // account for padding and text
-                const maxDimension = Math.min(availableWidth * 0.7, availableHeight * 0.7);
+                const availableWidth = pixelWidth - 4; // minimal padding
+                const availableHeight = pixelHeight - 20; // minimal space for text
+                const maxDimension = Math.min(availableWidth * 0.8, availableHeight * 0.8);
                 adjustedQrSize = Math.min(qrSize, maxDimension);
             } else {
-                // For side-by-side layout, QR must fit within the qr-section
-                const totalPadding = 10; // total padding from label-preview and label-content
-                const gap = 5; // gap between qr-section and text-section
+                // For side-by-side layout, QR can be larger now with 35% width
+                const totalPadding = 6; // minimal padding
+                const gap = 2; // minimal gap
                 
-                // Available space for QR section (25% of label width to be more conservative)
-                const qrSectionMaxWidth = (pixelWidth * 0.25) - totalPadding;
+                // Available space for QR section (35% of label width for better space usage)
+                const qrSectionMaxWidth = (pixelWidth * 0.35) - totalPadding;
                 const qrSectionMaxHeight = pixelHeight - totalPadding;
                 
                 // QR code should be square, so use the smaller dimension
@@ -883,8 +883,8 @@
                 adjustedQrSize = Math.min(qrSize, maxQrDimension);
             }
 
-            // Ensure minimum readable size and absolute maximum that fits in label
-            adjustedQrSize = Math.max(12, Math.min(adjustedQrSize, pixelWidth * 0.4, pixelHeight * 0.8));
+            // Ensure minimum readable size and maximum space utilization
+            adjustedQrSize = Math.max(10, Math.min(adjustedQrSize, pixelWidth * 0.5, pixelHeight * 0.9));
 
             // Wait for QR library to be available
             waitForQRCode(function(loaded) {
