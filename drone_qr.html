@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drone Operator Label Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js" onload="window.qrCodeLoaded = true" onerror="loadFallbackQR()"></script>
+    <script>
+        // Global variable to track QR library loading
+        window.qrCodeLoaded = false;
+        
+        // Fallback QR code library loader
+        function loadFallbackQR() {
+            console.log('Loading fallback QR library...');
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+            script.onload = function() {
+                window.qrCodeLoaded = true;
+                console.log('Fallback QR library loaded');
+            };
+            script.onerror = function() {
+                console.error('Both QR libraries failed to load');
+                window.qrCodeLoaded = false;
+            };
+            document.head.appendChild(script);
+        }
+        
+        // Wait for QR library to load
+        function waitForQRCode(callback, maxAttempts = 50) {
+            let attempts = 0;
+            const checkInterval = setInterval(() => {
+                attempts++;
+                if (typeof QRCode !== 'undefined' || window.qrCodeLoaded) {
+                    clearInterval(checkInterval);
+                    callback(true);
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(checkInterval);
+                    callback(false);
+                }
+            }, 100);
+        }
+        
+        // Simple fallback QR code generator using different APIs based on type
+        function generateSimpleQR(text, container, qrType = 'standard', size = 120) {
+            let qrUrl = '';
+            
+            switch(qrType) {
+                case 'micro':
+                    qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&qzone=1&data=${encodeURIComponent(text)}`;
+                    break;
+                case 'datamatrix':
+                    qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&format=svg&qzone=0&data=${encodeURIComponent(text)}`;
+                    break;
+                case 'pdf417':
+                case 'aztec':
+                    // Fallback to standard QR for unsupported types
+                    qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}`;
+                    break;
+                default:
+                    qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}`;
+            }
+            
+            const img = document.createElement('img');
+            img.src = qrUrl;
+            img.style.border = '1px solid #ddd';
+            img.style.borderRadius = '5px';
+            img.alt = 'QR Code';
+            img.onload = function() {
+                container.appendChild(img);
+            };
+            img.onerror = function() {
+                container.innerHTML = '<div style="color: red; font-size: 12px;">Unable to generate QR code</div>';
+            };
+        }
+    </script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #2c5364 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #181f2a;
+            border-radius: 18px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.18);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #232526 0%, #414345 100%);
+            color: #eaf6fb;
+            padding: 32px 30px 18px 30px;
+            text-align: center;
+            border-bottom: 2px solid #1e293b;
+        }
+
+        .header h1 {
+            font-size: 2.3em;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+            color: #00eaff;
+            text-shadow: 0 2px 8px #0f2027;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.92;
+            color: #b0c4d4;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .form-section {
+            background: #232b38;
+            padding: 28px 25px 25px 25px;
+            border-radius: 12px;
+            border: 1px solid #1e293b;
+            color: #eaf6fb;
+        }
+
+        .form-section h2 {
+            color: #00eaff;
+            margin-bottom: 18px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #00eaff;
+            padding-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #00eaff;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #1e293b;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            background-color: #1a2233;
+            color: #eaf6fb;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #00eaff;
+            box-shadow: 0 0 0 3px rgba(0, 234, 255, 0.13);
+        }
+
+        .form-group textarea {
+            height: 80px;
+            resize: vertical;
+        }
+
+        .button {
+            background: linear-gradient(90deg, #00eaff 0%, #232526 100%);
+            color: #181f2a;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            width: 100%;
+            box-shadow: 0 2px 8px #0f2027;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px #00eaff44;
+            background: linear-gradient(90deg, #00eaff 0%, #1e293b 100%);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .preview-section {
+            background: #232b38;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #1e293b;
+            text-align: center;
+            color: #eaf6fb;
+        }
+
+        .label-preview {
+            background: #181f2a;
+            border: 2px solid #00eaff;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px auto;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px #00eaff22;
+            transition: all 0.3s ease;
+        }
+
+        .label-preview.shape-rectangle {
+            border-radius: 5px;
+        }
+
+        .label-preview.shape-square {
+            border-radius: 5px;
+            aspect-ratio: 1;
+        }
+
+        .label-preview.shape-circle {
+            border-radius: 50%;
+            aspect-ratio: 1;
+        }
+
+        .label-preview.shape-rounded {
+            border-radius: 15px;
+        }
+
+        .size-info {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        .label-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px;
+        }
+
+        .label-content.single-column {
+            flex-direction: column;
+            text-align: center;
+            justify-content: center;
+        }
+
+        .qr-section {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .text-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-width: 0;
+        }
+
+        .label-title {
+            font-weight: bold;
+            color: #00eaff;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            line-height: 1.1;
+            text-shadow: 0 2px 8px #0f2027;
+        }
+
+        .label-info {
+            margin: 2px 0;
+            color: #b0c4d4;
+            line-height: 1.2;
+            word-wrap: break-word;
+        }
+
+        .label-info strong {
+            color: #00eaff;
+        }
+
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #232b38;
+            border-radius: 8px;
+        }
+
+        .custom-fields {
+            margin-top: 5px;
+            padding-top: 5px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .size-info {
+            font-size: 8px;
+            color: #999;
+            margin-top: 3px;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .custom-field {
+            display: flex;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .custom-field input {
+            flex: 1;
+        }
+
+        .remove-field {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .add-field {
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .print-button {
+            background: linear-gradient(90deg, #00eaff 0%, #27ae60 100%);
+            color: #181f2a;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            
+            .label-preview, .label-preview * {
+                visibility: visible;
+            }
+            
+            .label-preview {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 20px !important;
+                box-shadow: none !important;
+                border: 2px solid #000 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚁 Drone Label Generator</h1>
+            <p>Create professional drone identification labels with QR codes</p>
+        </div>
+
+        <div class="main-content">
+            <div class="form-section">
+                <h2>Pilot & Drone Information</h2>
+                <div class="form-group">
+                    <label for="operatorId">Operator Registration ID *</label>
+                    <input type="text" id="operatorId" placeholder="e.g., RO-DRONE-123456" required>
+                </div>
+                <div class="form-group">
+                    <label for="pilotName">Pilot Full Name *</label>
+                    <input type="text" id="pilotName" placeholder="e.g., John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label for="phoneNumber">Contact Phone *</label>
+                    <input type="tel" id="phoneNumber" placeholder="e.g., +40 712 345 678" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" placeholder="e.g., john.doe@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="droneName">Drone Model</label>
+                    <input type="text" id="droneName" placeholder="e.g., DJI Mavic 3" required>
+                </div>
+                <div class="form-group">
+                    <label for="droneSerial">Drone Serial Number</label>
+                    <input type="text" id="droneSerial" placeholder="e.g., SN1234567890">
+                </div>
+                <div class="form-group">
+                    <label for="operatorAddress">Operator Address</label>
+                    <input type="text" id="operatorAddress" placeholder="e.g., 123 Aviation St, Bucharest, RO">
+                </div>
+                <div class="form-group">
+                    <label for="insurance">Insurance Policy Number</label>
+                    <input type="text" id="insurance" placeholder="e.g., INS-987654321">
+                </div>
+                <div class="form-group">
+                    <label for="uasClass">UAS Class</label>
+                    <input type="text" id="uasClass" placeholder="e.g., C1, C2, C3, Open, Specific">
+                </div>
+                <div class="form-group">
+                    <label for="operatorCountry">Country of Registration</label>
+                    <input type="text" id="operatorCountry" placeholder="e.g., Romania">
+                </div>
+
+                <h2 style="margin-top: 30px;">Label Configuration</h2>
+                
+                <div class="form-group">
+                    <label for="labelShape">Label Shape</label>
+                    <select id="labelShape">
+                        <option value="rectangle">Rectangle</option>
+                        <option value="square">Square</option>
+                        <option value="circle">Circle</option>
+                        <option value="rounded">Rounded Rectangle</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="labelSize">Label Size (mm)</label>
+                    <select id="labelSize">
+                        <option value="25x25">25 x 25 mm (Small Square)</option>
+                        <option value="30x30">30 x 30 mm (Medium Square)</option>
+                        <option value="40x40">40 x 40 mm (Large Square)</option>
+                        <option value="50x25" selected>50 x 25 mm (Standard Rectangle)</option>
+                        <option value="60x30">60 x 30 mm (Medium Rectangle)</option>
+                        <option value="80x40">80 x 40 mm (Large Rectangle)</option>
+                        <option value="100x50">100 x 50 mm (XL Rectangle)</option>
+                        <option value="custom">Custom Size</option>
+                    </select>
+                </div>
+
+                <div id="customSizeFields" style="display: none;">
+                    <div class="form-group" style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label for="customWidth">Width (mm)</label>
+                            <input type="number" id="customWidth" min="20" max="200" value="50">
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="customHeight">Height (mm)</label>
+                            <input type="number" id="customHeight" min="15" max="200" value="25">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="qrCodeType">QR Code Type</label>
+                    <select id="qrCodeType">
+                        <option value="standard">Standard QR Code</option>
+                        <option value="micro">Micro QR Code</option>
+                        <option value="datamatrix">Data Matrix</option>
+                        <option value="pdf417">PDF417</option>
+                        <option value="aztec">Aztec Code</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="qrSize">QR Code Size</label>
+                    <select id="qrSize">
+                        <option value="80">Small (80px)</option>
+                        <option value="100">Medium (100px)</option>
+                        <option value="120" selected>Standard (120px)</option>
+                        <option value="150">Large (150px)</option>
+                        <option value="200">XL (200px)</option>
+                    </select>
+                </div>
+
+                <h2 style="margin-top: 30px;">Custom QR Code Fields</h2>
+                <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
+                    Add custom information to be encoded in the QR code
+                </p>
+                
+                <div id="customFields">
+                    <div class="custom-field">
+                        <input type="text" placeholder="Field name (e.g., Registration)" class="field-name">
+                        <input type="text" placeholder="Field value" class="field-value">
+                        <button type="button" class="remove-field" onclick="removeField(this)">×</button>
+                    </div>
+                </div>
+                
+                <button type="button" class="add-field" onclick="addField()">+ Add Field</button>
+                
+                <button type="button" class="button" onclick="generateLabel()" style="margin-top: 30px;">
+                    Generate Label
+                </button>
+            </div>
+
+            <div class="preview-section">
+                <h2>Label Preview</h2>
+                
+                <div class="label-preview" id="labelPreview">
+                    <div class="label-content">
+                        <div class="label-title">Drone Identification</div>
+                        <div class="label-info">Fill out the form to generate your drone label</div>
+                    </div>
+                </div>
+                
+                <button type="button" class="button print-button" onclick="printLabel()">
+                    🖨️ Print Label
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addField() {
+            const customFields = document.getElementById('customFields');
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'custom-field';
+            fieldDiv.innerHTML = `
+                <input type="text" placeholder="Field name" class="field-name">
+                <input type="text" placeholder="Field value" class="field-value">
+                <button type="button" class="remove-field" onclick="removeField(this)">×</button>
+            `;
+            customFields.appendChild(fieldDiv);
+            
+            // Add event listeners for the new fields
+            const newInputs = fieldDiv.querySelectorAll('input');
+            newInputs.forEach(input => {
+                input.addEventListener('input', generateLabel);
+            });
+        }
+
+        function removeField(button) {
+            const customFields = document.getElementById('customFields');
+            if (customFields.children.length > 1) {
+                button.parentElement.remove();
+            }
+        }
+
+        function generateLabel() {
+            const operatorId = document.getElementById('operatorId').value;
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            const droneName = document.getElementById('droneName').value;
+            const ownerName = document.getElementById('ownerName').value;
+            
+            // Get configuration values
+            const labelShape = document.getElementById('labelShape').value;
+            const labelSize = document.getElementById('labelSize').value;
+            const qrCodeType = document.getElementById('qrCodeType').value;
+            const qrSize = parseInt(document.getElementById('qrSize').value);
+
+            // Handle custom size
+            let width, height;
+            if (labelSize === 'custom') {
+                width = parseInt(document.getElementById('customWidth').value) || 50;
+                height = parseInt(document.getElementById('customHeight').value) || 25;
+            } else {
+                const [w, h] = labelSize.split('x').map(v => parseInt(v));
+                width = w;
+                height = h;
+            }
+
+            // Collect custom fields
+            const customFields = [];
+            const fieldElements = document.querySelectorAll('.custom-field');
+            fieldElements.forEach(field => {
+                const name = field.querySelector('.field-name').value.trim();
+                const value = field.querySelector('.field-value').value.trim();
+                if (name && value) {
+                    customFields.push(`${name}: ${value}`);
+                }
+            });
+
+            // Create QR code data
+            let qrData = '';
+            if (operatorId || phoneNumber) {
+                qrData = `Operator ID: ${operatorId || 'Not provided'}\nPhone: ${phoneNumber || 'Not provided'}`;
+                if (droneName) qrData += `\nDrone: ${droneName}`;
+                if (ownerName) qrData += `\nOwner: ${ownerName}`;
+                if (customFields.length > 0) {
+                    qrData += '\n' + customFields.join('\n');
+                }
+            } else {
+                qrData = 'Please fill in Operator ID and Phone Number to generate QR code';
+            }
+
+            // Apply label styling based on configuration
+            const labelPreview = document.getElementById('labelPreview');
+            
+            // Remove existing shape classes
+            labelPreview.className = labelPreview.className.replace(/shape-\w+/g, '');
+            labelPreview.classList.add(`shape-${labelShape}`);
+            
+            // Set dimensions (convert mm to approximate pixels for preview - rough conversion 1mm ≈ 3.78px)
+            const pixelWidth = Math.round(width * 3.78);
+            const pixelHeight = Math.round(height * 3.78);
+            
+            labelPreview.style.width = `${pixelWidth}px`;
+            labelPreview.style.maxWidth = `${pixelWidth}px`;
+            labelPreview.style.height = `${pixelHeight}px`;
+            labelPreview.style.minHeight = `${pixelHeight}px`;
+
+            // Generate label content with side-by-side layout
+            const isSmallLabel = width < 40 || height < 25;
+            const titleFontSize = Math.max(8, Math.min(14, width / 6));
+            const infoFontSize = Math.max(6, Math.min(12, width / 8));
+            
+            let labelContent = '';
+            
+            if (isSmallLabel) {
+                // For very small labels, use single column layout
+                labelContent = `
+                    <div class="label-content single-column">
+                        <div class="label-title" style="font-size: ${titleFontSize}px;">DRONE ID</div>
+                        <div id="qrcode"></div>
+                `;
+                
+                if (operatorId) {
+                    labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;">${operatorId}</div>`;
+                }
+                
+                labelContent += `<div class="size-info">${width} x ${height} mm</div></div>`;
+            } else {
+                // For larger labels, use side-by-side layout
+                labelContent = `
+                    <div class="label-content">
+                        <div class="qr-section">
+                            <div id="qrcode"></div>
+                        </div>
+                        <div class="text-section">
+                            <div class="label-title" style="font-size: ${titleFontSize}px;">DRONE IDENTIFICATION</div>
+                `;
+
+                if (operatorId) {
+                    labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;"><strong>ID:</strong> ${operatorId}</div>`;
+                }
+
+                if (phoneNumber) {
+                    labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;"><strong>Phone:</strong> ${phoneNumber}</div>`;
+                }
+
+                if (droneName) {
+                    labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;"><strong>Model:</strong> ${droneName}</div>`;
+                }
+
+                if (ownerName) {
+                    labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;"><strong>Owner:</strong> ${ownerName}</div>`;
+                }
+
+                if (customFields.length > 0) {
+                    customFields.forEach(field => {
+                        labelContent += `<div class="label-info" style="font-size: ${Math.max(5, infoFontSize - 1)}px;">${field}</div>`;
+                    });
+                }
+
+                if (!operatorId && !phoneNumber && !droneName && !ownerName && customFields.length === 0) {
+                    labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;">Fill out the form</div>`;
+                }
+
+                labelContent += `<div class="size-info">${width} x ${height} mm</div></div></div>`;
+            }
+
+            // Update preview
+            labelPreview.innerHTML = labelContent;
+
+            // Generate QR code
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = ''; // Clear previous QR code
+            
+            // Calculate appropriate QR size based on layout and label dimensions
+            let adjustedQrSize;
+            if (isSmallLabel) {
+                // For small labels, QR takes up most of the width
+                adjustedQrSize = Math.min(qrSize, Math.min(pixelWidth * 0.7, pixelHeight * 0.4));
+            } else {
+                // For side-by-side layout, QR should fit in the left section (about 40% of width)
+                const maxQrWidth = pixelWidth * 0.4;
+                const maxQrHeight = pixelHeight * 0.8; // Leave some margin
+                adjustedQrSize = Math.min(qrSize, Math.min(maxQrWidth, maxQrHeight));
+            }
+            
+            // Ensure minimum readable size
+            adjustedQrSize = Math.max(40, adjustedQrSize);
+            
+            // Wait for QR library to be available
+            waitForQRCode(function(loaded) {
+                if (!loaded || typeof QRCode === 'undefined') {
+                    console.log('Primary QR library not available, using fallback...');
+                    generateSimpleQR(qrData, qrContainer, qrCodeType, adjustedQrSize);
+                    return;
+                }
+                
+                try {
+                    QRCode.toCanvas(qrData, { 
+                        width: adjustedQrSize, 
+                        height: adjustedQrSize,
+                        margin: 2,
+                        color: {
+                            dark: '#000000',
+                            light: '#FFFFFF'
+                        }
+                    }, function (error, canvas) {
+                        if (error) {
+                            console.error('QR Code generation error:', error);
+                            console.log('Canvas generation failed, using fallback...');
+                            generateSimpleQR(qrData, qrContainer, qrCodeType, adjustedQrSize);
+                        } else {
+                            canvas.style.border = '1px solid #ddd';
+                            canvas.style.borderRadius = '5px';
+                            qrContainer.appendChild(canvas);
+                        }
+                    });
+                } catch (e) {
+                    console.error('QR Code error:', e);
+                    console.log('Exception occurred, using fallback...');
+                    generateSimpleQR(qrData, qrContainer, qrCodeType, adjustedQrSize);
+                }
+            });
+        }
+
+        function printLabel() {
+            window.print();
+        }
+
+        // Generate initial label when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listeners for real-time updates
+            const inputs = ['operatorId', 'phoneNumber', 'droneName', 'ownerName'];
+            inputs.forEach(id => {
+                document.getElementById(id).addEventListener('input', generateLabel);
+            });
+            
+            // Add event listeners for configuration options
+            const configElements = ['labelShape', 'labelSize', 'qrCodeType', 'qrSize', 'customWidth', 'customHeight'];
+            configElements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('change', generateLabel);
+                    element.addEventListener('input', generateLabel);
+                }
+            });
+            
+            // Handle custom size toggle
+            document.getElementById('labelSize').addEventListener('change', function() {
+                const customFields = document.getElementById('customSizeFields');
+                if (this.value === 'custom') {
+                    customFields.style.display = 'block';
+                } else {
+                    customFields.style.display = 'none';
+                }
+                generateLabel();
+            });
+            
+            // Add event listeners for existing custom fields
+            const existingCustomInputs = document.querySelectorAll('.custom-field input');
+            existingCustomInputs.forEach(input => {
+                input.addEventListener('input', generateLabel);
+            });
+            
+            // Generate an initial empty label
+            setTimeout(generateLabel, 100);
+        });
+    </script>
+</body>
+</html>
