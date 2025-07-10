@@ -614,6 +614,9 @@
             const operatorId = document.getElementById('operatorId').value;
             const phoneNumber = document.getElementById('phoneNumber').value;
             const droneName = document.getElementById('droneName').value;
+
+            const ownerName = document.getElementById('ownerName').value;
+
             // ownerName field does not exist, so skip it
             const pilotName = document.getElementById('pilotName').value;
             
@@ -650,7 +653,11 @@
             if (operatorId || phoneNumber) {
                 qrData = `Operator ID: ${operatorId || 'Not provided'}\nPhone: ${phoneNumber || 'Not provided'}`;
                 if (droneName) qrData += `\nDrone: ${droneName}`;
+
+                if (ownerName) qrData += `\nOwner: ${ownerName}`;
+
                 if (pilotName) qrData += `\nPilot: ${pilotName}`;
+
                 if (customFields.length > 0) {
                     qrData += '\n' + customFields.join('\n');
                 }
@@ -709,9 +716,11 @@
                     labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;"><strong>ID:</strong> ${operatorId}</div>`;
                 }
 
+
                 if (pilotName) {
                     labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;"><strong>Pilot:</strong> ${pilotName}</div>`;
                 }
+
 
                 if (phoneNumber) {
                     labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;"><strong>Phone:</strong> ${phoneNumber}</div>`;
@@ -721,13 +730,22 @@
                     labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;"><strong>Model:</strong> ${droneName}</div>`;
                 }
 
+
+                if (ownerName) {
+                    labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;"><strong>Owner:</strong> ${ownerName}</div>`;
+                }
+
                 if (customFields.length > 0) {
                     customFields.forEach(field => {
                         labelContent += `<div class="label-info" style="font-size: ${Math.max(5, infoFontSize - 1)}px;">${field}</div>`;
                     });
                 }
 
+
+                if (!operatorId && !phoneNumber && !droneName && !ownerName && customFields.length === 0) {
+
                 if (!operatorId && !pilotName && !phoneNumber && !droneName && customFields.length === 0) {
+
                     labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;">Fill out the form</div>`;
                 }
 
@@ -799,10 +817,16 @@
         // Generate initial label when page loads
         document.addEventListener('DOMContentLoaded', function() {
             // Add event listeners for real-time updates
+
+            const inputs = ['operatorId', 'phoneNumber', 'droneName', 'ownerName'];
+            inputs.forEach(id => {
+                document.getElementById(id).addEventListener('input', generateLabel);
+
             const inputs = ['operatorId', 'pilotName', 'phoneNumber', 'droneName'];
             inputs.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.addEventListener('input', generateLabel);
+
             });
             
             // Add event listeners for configuration options
