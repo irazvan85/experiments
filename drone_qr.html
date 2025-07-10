@@ -281,6 +281,23 @@
             transform: translateY(0);
         }
 
+        .download-button {
+            background: linear-gradient(90deg, #00eaff 0%, #ff6b6b 100%);
+            color: #181f2a;
+            margin-top: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .button-group .button {
+            flex: 1;
+            margin-top: 0;
+        }
+
         .preview-section {
             background: #232b38;
             padding: 25px;
@@ -687,14 +704,19 @@
                 
                 <div class="label-preview" id="labelPreview">
                     <div class="label-content">
-                        <div class="label-title">Drone Identification</div>
+                        <div class="label-title">Drone Label Generator</div>
                         <div class="label-info">Fill out the form to generate your drone label</div>
                     </div>
                 </div>
                 
-                <button type="button" class="button print-button" onclick="printLabel()">
-                    🖨️ Print Label
-                </button>
+                <div class="button-group">
+                    <button type="button" class="button print-button" onclick="printLabel()">
+                        🖨️ Print Label
+                    </button>
+                    <button type="button" class="button download-button" onclick="downloadLabel()">
+                        💾 Download PNG
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -799,7 +821,6 @@
                 // For very small labels, use single column layout
                 labelContent = `
                     <div class="label-content single-column">
-                        <div class="label-title" style="font-size: ${titleFontSize}px;">DRONE ID</div>
                         <div id="qrcode"></div>
                 `;
                 
@@ -816,7 +837,6 @@
                             <div id="qrcode"></div>
                         </div>
                         <div class="text-section">
-                            <div class="label-title" style="font-size: ${titleFontSize}px;">DRONE ID</div>
                 `;
 
                 if (operatorId) {
@@ -934,6 +954,133 @@
 
         function printLabel() {
             window.print();
+        }
+
+        // Download label as PNG image
+        function downloadLabel() {
+            const labelPreview = document.getElementById('labelPreview');
+            
+            // Show progress
+            showProgress();
+            document.getElementById('progressText').textContent = 'Generating image...';
+            
+            // Use html2canvas library to convert the label to canvas
+            if (typeof html2canvas === 'undefined') {
+                // Load html2canvas library dynamically
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+                script.onload = function() {
+                    captureAndDownload(labelPreview);
+                };
+                script.onerror = function() {
+                    // Fallback method using dom-to-image
+                    loadDomToImageFallback(labelPreview);
+                };
+                document.head.appendChild(script);
+            } else {
+                captureAndDownload(labelPreview);
+            }
+        }
+
+        function captureAndDownload(element) {
+            // Configure html2canvas options for better quality
+            const options = {
+                backgroundColor: '#181f2a',
+                scale: 3, // Higher resolution
+                useCORS: true,
+                allowTaint: true,
+                logging: false,
+                width: element.offsetWidth,
+                height: element.offsetHeight,
+                scrollX: 0,
+                scrollY: 0
+            };
+
+            html2canvas(element, options).then(function(canvas) {
+                // Create download link
+                const link = document.createElement('a');
+                link.download = 'drone-label.png';
+                link.href = canvas.toDataURL('image/png', 1.0);
+                
+                // Trigger download
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                hideProgress();
+            }).catch(function(error) {
+                console.error('Error capturing label:', error);
+                loadDomToImageFallback(element);
+            });
+        }
+
+        function loadDomToImageFallback(element) {
+            // Load dom-to-image as fallback
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/dom-to-image@2.6.0/dist/dom-to-image.min.js';
+            script.onload = function() {
+                domtoimage.toPng(element, {
+                    bgcolor: '#181f2a',
+                    quality: 1.0,
+                    scale: 3
+                }).then(function(dataUrl) {
+                    const link = document.createElement('a');
+                    link.download = 'drone-label.png';
+                    link.href = dataUrl;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    hideProgress();
+                }).catch(function(error) {
+                    console.error('Fallback capture failed:', error);
+                    // Manual canvas fallback
+                    manualCanvasCapture(element);
+                });
+            };
+            script.onerror = function() {
+                console.error('Failed to load fallback library');
+                manualCanvasCapture(element);
+            };
+            document.head.appendChild(script);
+        }
+
+        function manualCanvasCapture(element) {
+            // Manual canvas creation as last resort
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const rect = element.getBoundingClientRect();
+            
+            // Set canvas size with higher resolution
+            const scale = 3;
+            canvas.width = rect.width * scale;
+            canvas.height = rect.height * scale;
+            ctx.scale(scale, scale);
+            
+            // Fill background
+            ctx.fillStyle = '#181f2a';
+            ctx.fillRect(0, 0, rect.width, rect.height);
+            
+            // Draw border
+            ctx.strokeStyle = '#00eaff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(1, 1, rect.width - 2, rect.height - 2);
+            
+            // Add text indicating manual capture
+            ctx.fillStyle = '#00eaff';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Label Preview', rect.width / 2, rect.height / 2);
+            ctx.fillText('(Print for better quality)', rect.width / 2, rect.height / 2 + 20);
+            
+            // Download
+            const link = document.createElement('a');
+            link.download = 'drone-label.png';
+            link.href = canvas.toDataURL('image/png', 1.0);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            hideProgress();
         }
 
         // Generate initial label when page loads
