@@ -66,11 +66,52 @@
             img.style.borderRadius = '5px';
             img.alt = 'QR Code';
             img.onload = function() {
+                container.innerHTML = '';
                 container.appendChild(img);
+                hideProgress();
             };
             img.onerror = function() {
                 container.innerHTML = '<div style="color: red; font-size: 12px;">Unable to generate QR code</div>';
+                hideProgress();
             };
+        }
+
+        // Progress bar functions
+        function showProgress() {
+            const progressContainer = document.getElementById('progressContainer');
+            const progressText = document.getElementById('progressText');
+            const progressBar = document.getElementById('progressBar');
+            
+            progressContainer.style.display = 'block';
+            progressText.style.display = 'block';
+            progressBar.style.width = '0%';
+            
+            // Animate progress bar
+            setTimeout(() => progressBar.style.width = '30%', 100);
+            setTimeout(() => progressBar.style.width = '60%', 300);
+            setTimeout(() => progressBar.style.width = '90%', 500);
+        }
+
+        function hideProgress() {
+            const progressContainer = document.getElementById('progressContainer');
+            const progressText = document.getElementById('progressText');
+            const progressBar = document.getElementById('progressBar');
+            
+            progressBar.style.width = '100%';
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+                progressText.style.display = 'none';
+                progressBar.style.width = '0%';
+            }, 300);
+        }
+
+        function showQRLoading(container) {
+            container.innerHTML = `
+                <div class="qr-loading">
+                    <div class="spinner"></div>
+                    <div>Generating QR Code...</div>
+                </div>
+            `;
         }
     </script>
     <style>
@@ -253,7 +294,7 @@
             background: #181f2a;
             border: 2px solid #00eaff;
             border-radius: 12px;
-            padding: 20px;
+            padding: 5px;
             margin: 20px auto;
             min-height: 300px;
             display: flex;
@@ -262,6 +303,7 @@
             justify-content: center;
             box-shadow: 0 5px 15px #00eaff22;
             transition: all 0.3s ease;
+            overflow: hidden;
         }
 
         .label-preview.shape-rectangle {
@@ -294,8 +336,10 @@
             height: 100%;
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 5px;
+            gap: 5px;
+            padding: 2px;
+            box-sizing: border-box;
+            overflow: hidden;
         }
 
         .label-content.single-column {
@@ -309,6 +353,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            max-width: 25%; /* More conservative width to ensure QR fits */
+            overflow: hidden; /* Prevent overflow */
+            height: 100%; /* Use full height */
+            box-sizing: border-box;
         }
 
         .text-section {
@@ -346,6 +394,17 @@
             align-items: center;
             background: #232b38;
             border-radius: 8px;
+            max-width: 100%; /* Ensure QR code container doesn't exceed parent */
+            max-height: 100%; /* Ensure QR code container doesn't exceed parent */
+        }
+
+        #qrcode canvas,
+        #qrcode img {
+            max-width: 100% !important;
+            max-height: 100% !important;
+            width: auto !important;
+            height: auto !important;
+            object-fit: contain;
         }
 
         .custom-fields {
@@ -397,6 +456,57 @@
             background: linear-gradient(90deg, #00eaff 0%, #27ae60 100%);
             color: #181f2a;
             margin-top: 20px;
+        }
+
+        .progress-container {
+            position: relative;
+            margin: 10px 0;
+            background: #1e293b;
+            border-radius: 8px;
+            height: 6px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00eaff 0%, #27ae60 100%);
+            border-radius: 8px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: #00eaff;
+            text-align: center;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .qr-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #00eaff;
+            font-size: 12px;
+        }
+
+        .spinner {
+            border: 2px solid #1e293b;
+            border-top: 2px solid #00eaff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         @media (max-width: 768px) {
@@ -570,6 +680,11 @@
             <div class="preview-section">
                 <h2>Label Preview</h2>
                 
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+                <div class="progress-text" id="progressText">Generating QR Code...</div>
+                
                 <div class="label-preview" id="labelPreview">
                     <div class="label-content">
                         <div class="label-title">Drone Identification</div>
@@ -612,13 +727,9 @@
 
         function generateLabel() {
             const operatorId = document.getElementById('operatorId').value;
+            const pilotName = document.getElementById('pilotName').value;
             const phoneNumber = document.getElementById('phoneNumber').value;
             const droneName = document.getElementById('droneName').value;
-
-            const ownerName = document.getElementById('ownerName').value;
-
-            // ownerName field does not exist, so skip it
-            const pilotName = document.getElementById('pilotName').value;
             
             // Get configuration values
             const labelShape = document.getElementById('labelShape').value;
@@ -653,11 +764,7 @@
             if (operatorId || phoneNumber) {
                 qrData = `Operator ID: ${operatorId || 'Not provided'}\nPhone: ${phoneNumber || 'Not provided'}`;
                 if (droneName) qrData += `\nDrone: ${droneName}`;
-
-                if (ownerName) qrData += `\nOwner: ${ownerName}`;
-
                 if (pilotName) qrData += `\nPilot: ${pilotName}`;
-
                 if (customFields.length > 0) {
                     qrData += '\n' + customFields.join('\n');
                 }
@@ -716,11 +823,9 @@
                     labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;"><strong>ID:</strong> ${operatorId}</div>`;
                 }
 
-
                 if (pilotName) {
                     labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;"><strong>Pilot:</strong> ${pilotName}</div>`;
                 }
-
 
                 if (phoneNumber) {
                     labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;"><strong>Phone:</strong> ${phoneNumber}</div>`;
@@ -730,22 +835,13 @@
                     labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;"><strong>Model:</strong> ${droneName}</div>`;
                 }
 
-
-                if (ownerName) {
-                    labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;"><strong>Owner:</strong> ${ownerName}</div>`;
-                }
-
                 if (customFields.length > 0) {
                     customFields.forEach(field => {
                         labelContent += `<div class="label-info" style="font-size: ${Math.max(5, infoFontSize - 1)}px;">${field}</div>`;
                     });
                 }
 
-
-                if (!operatorId && !phoneNumber && !droneName && !ownerName && customFields.length === 0) {
-
                 if (!operatorId && !pilotName && !phoneNumber && !droneName && customFields.length === 0) {
-
                     labelContent += `<div class="label-info" style="font-size: ${infoFontSize}px;">Fill out the form</div>`;
                 }
 
@@ -759,53 +855,79 @@
             const qrContainer = document.getElementById('qrcode');
             qrContainer.innerHTML = ''; // Clear previous QR code
             
-            // Calculate appropriate QR size based on layout and label dimensions
+            // Show progress and loading
+            showProgress();
+            showQRLoading(qrContainer);
+            
+            // Final adjustment for QR code sizing
             let adjustedQrSize;
             if (isSmallLabel) {
-                // For small labels, QR takes up most of the width
-                adjustedQrSize = Math.min(qrSize, Math.min(pixelWidth * 0.7, pixelHeight * 0.4));
+                // For small labels, QR takes up most of the available space
+                const availableWidth = pixelWidth - 10; // account for padding
+                const availableHeight = pixelHeight - 30; // account for padding and text
+                const maxDimension = Math.min(availableWidth * 0.7, availableHeight * 0.7);
+                adjustedQrSize = Math.min(qrSize, maxDimension);
             } else {
-                // For side-by-side layout, QR should fit in the left section (about 40% of width)
-                const maxQrWidth = pixelWidth * 0.4;
-                const maxQrHeight = pixelHeight * 0.8; // Leave some margin
-                adjustedQrSize = Math.min(qrSize, Math.min(maxQrWidth, maxQrHeight));
+                // For side-by-side layout, QR must fit within the qr-section
+                const totalPadding = 10; // total padding from label-preview and label-content
+                const gap = 5; // gap between qr-section and text-section
+                
+                // Available space for QR section (25% of label width to be more conservative)
+                const qrSectionMaxWidth = (pixelWidth * 0.25) - totalPadding;
+                const qrSectionMaxHeight = pixelHeight - totalPadding;
+                
+                // QR code should be square, so use the smaller dimension
+                const maxQrDimension = Math.min(qrSectionMaxWidth, qrSectionMaxHeight);
+                
+                // Don't exceed the user's selected QR size, but ensure it fits
+                adjustedQrSize = Math.min(qrSize, maxQrDimension);
             }
-            
-            // Ensure minimum readable size
-            adjustedQrSize = Math.max(40, adjustedQrSize);
-            
+
+            // Ensure minimum readable size and absolute maximum that fits in label
+            adjustedQrSize = Math.max(12, Math.min(adjustedQrSize, pixelWidth * 0.4, pixelHeight * 0.8));
+
             // Wait for QR library to be available
             waitForQRCode(function(loaded) {
                 if (!loaded || typeof QRCode === 'undefined') {
                     console.log('Primary QR library not available, using fallback...');
-                    generateSimpleQR(qrData, qrContainer, qrCodeType, adjustedQrSize);
+                    setTimeout(() => {
+                        generateSimpleQR(qrData, qrContainer, qrCodeType, adjustedQrSize);
+                        hideProgress();
+                    }, 800);
                     return;
                 }
-                
+
                 try {
-                    QRCode.toCanvas(qrData, { 
-                        width: adjustedQrSize, 
-                        height: adjustedQrSize,
-                        margin: 2,
-                        color: {
-                            dark: '#000000',
-                            light: '#FFFFFF'
-                        }
-                    }, function (error, canvas) {
-                        if (error) {
-                            console.error('QR Code generation error:', error);
-                            console.log('Canvas generation failed, using fallback...');
-                            generateSimpleQR(qrData, qrContainer, qrCodeType, adjustedQrSize);
-                        } else {
-                            canvas.style.border = '1px solid #ddd';
-                            canvas.style.borderRadius = '5px';
-                            qrContainer.appendChild(canvas);
-                        }
-                    });
+                    setTimeout(() => {
+                        QRCode.toCanvas(qrData, { 
+                            width: adjustedQrSize, 
+                            height: adjustedQrSize,
+                            margin: 2,
+                            color: {
+                                dark: '#000000',
+                                light: '#FFFFFF'
+                            }
+                        }, function (error, canvas) {
+                            if (error) {
+                                console.error('QR Code generation error:', error);
+                                console.log('Canvas generation failed, using fallback...');
+                                generateSimpleQR(qrData, qrContainer, qrCodeType, adjustedQrSize);
+                            } else {
+                                qrContainer.innerHTML = '';
+                                canvas.style.border = '1px solid #ddd';
+                                canvas.style.borderRadius = '5px';
+                                qrContainer.appendChild(canvas);
+                            }
+                            hideProgress();
+                        });
+                    }, 800);
                 } catch (e) {
                     console.error('QR Code error:', e);
                     console.log('Exception occurred, using fallback...');
-                    generateSimpleQR(qrData, qrContainer, qrCodeType, adjustedQrSize);
+                    setTimeout(() => {
+                        generateSimpleQR(qrData, qrContainer, qrCodeType, adjustedQrSize);
+                        hideProgress();
+                    }, 800);
                 }
             });
         }
@@ -817,16 +939,10 @@
         // Generate initial label when page loads
         document.addEventListener('DOMContentLoaded', function() {
             // Add event listeners for real-time updates
-
-            const inputs = ['operatorId', 'phoneNumber', 'droneName', 'ownerName'];
-            inputs.forEach(id => {
-                document.getElementById(id).addEventListener('input', generateLabel);
-
-            const inputs = ['operatorId', 'pilotName', 'phoneNumber', 'droneName'];
+            const inputs = ['operatorId', 'pilotName', 'phoneNumber', 'droneName', 'email', 'droneSerial', 'operatorAddress', 'insurance', 'uasClass', 'operatorCountry'];
             inputs.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.addEventListener('input', generateLabel);
-
             });
             
             // Add event listeners for configuration options
